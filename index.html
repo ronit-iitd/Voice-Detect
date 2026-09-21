@@ -1,0 +1,892 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Text Analysis Tool</title>
+  <!-- Include jsPDF library from CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <style>
+    /* Define CSS variables for light theme */
+    :root {
+      --bg-color: #f7f7f7;
+      --text-color: #333;
+      --container-bg: #fff;
+      --accent-color: #d9534f;
+      --accent-hover: #c9302c;
+      --heading-color: #d9534f;
+      --formula-bg: #f0f0f0;
+      --formula-text: #333;
+      --feature-heading-bg: #f7b1a7;
+    }
+
+    /* Dark theme overrides */
+    .dark-theme {
+      --bg-color: #1e1e1e;
+      --text-color: #e0e0e0;
+      --container-bg: #2c2c2c;
+      --accent-color: #ff6666;
+      --accent-hover: #ff4d4d;
+      --heading-color: #ff6666;
+      --formula-bg: #3a3a3a;
+      --formula-text: #e0e0e0;
+      --feature-heading-bg: #664d4d;
+    }
+
+    body {
+      font-family: Arial, sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      line-height: 1.6;
+      margin: 0;
+      padding: 0;
+      transition: background-color 0.3s, color 0.3s;
+    }
+
+    /* Landing Page Styles */
+    #landingPage {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      text-align: center;
+      background: var(--bg-color);
+      padding: 20px;
+    }
+
+    #landingPage h1 {
+      font-size: 3em;
+      margin-bottom: 0.5em;
+      color: var(--heading-color);
+    }
+
+    #landingPage p {
+      font-size: 1.2em;
+      margin-bottom: 1em;
+    }
+
+    /* Common Button Styles for Landing Page */
+    #landingPage button {
+      padding: 10px 20px;
+      font-size: 1.1em;
+      background-color: var(--accent-color);
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+      margin: 5px;
+    }
+
+    #landingPage button:hover {
+      background-color: var(--accent-hover);
+    }
+
+    /* Small Dark Theme Toggle Button (displays "0" and "I") */
+    .theme-toggle {
+      box-sizing: border-box;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2px;
+      font-size: 12px;
+      background-color: var(--accent-color);
+      color: #fff;
+      border: none;
+      border-radius: 3px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+      margin-bottom: 1em;
+      width: 30px;
+      height: 30px;
+    }
+    .theme-toggle:hover {
+      background-color: var(--accent-hover);
+    }
+
+    /* Attribution Message */
+    .attribution {
+      margin-top: 2em;
+      font-size: 0.9em;
+      color: var(--text-color);
+    }
+
+    .attribution .disclaimer {
+      font-size: 0.75em;
+      opacity: 0.8;
+    }
+
+    /* Analysis Tool Container */
+    .container {
+      width: 80%;
+      margin: 20px auto;
+      padding: 20px;
+      background-color: var(--container-bg);
+      box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+      border-radius: 10px;
+      transition: background-color 0.3s;
+    }
+
+    h1, h2, h3 {
+      text-align: center;
+      color: var(--heading-color);
+    }
+
+    textarea {
+      width: 100%;
+      height: 150px;
+      margin-bottom: 20px;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      font-size: 14px;
+    }
+
+    button {
+      width: 100%;
+      padding: 10px;
+      font-size: 16px;
+      background-color: var(--accent-color);
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      margin-top: 10px;
+      transition: background-color 0.3s;
+    }
+
+    button:hover {
+      background-color: var(--accent-hover);
+    }
+
+    table {
+      width: 100%;
+      margin-top: 20px;
+      border-collapse: collapse;
+    }
+
+    table, th, td {
+      border: 1px solid #ddd;
+    }
+
+    th, td {
+      padding: 10px;
+      text-align: left;
+    }
+
+    th {
+      background-color: var(--accent-color);
+      color: white;
+    }
+
+    .feature-heading {
+      background-color: var(--feature-heading-bg);
+      text-align: center;
+      font-size: 18px;
+    }
+
+    .formula-section {
+      margin-top: 40px;
+      padding: 20px;
+      background-color: var(--formula-bg);
+      border-radius: 10px;
+      color: var(--formula-text);
+    }
+
+    .formula-section ul {
+      list-style-type: none;
+      padding: 0;
+    }
+
+    .formula-section li {
+      margin-bottom: 10px;
+    }
+
+    .formula-title {
+      font-weight: bold;
+    }
+
+    /* PDF Download Button: Changed color */
+    .download-button {
+      background-color: #28a745;
+    }
+    .download-button:hover {
+      background-color: #218838;
+    }
+  </style>
+</head>
+<body>
+  <!-- Landing Page Section -->
+  <section id="landingPage">
+    <!-- Small Dark Theme Toggle Button (displays "0" when off, "I" when on) -->
+    <button class="theme-toggle" id="themeToggle" onclick="toggleDarkTheme()" aria-label="Toggle dark theme" aria-pressed="false">0</button>
+    
+    <h1>Voice Detect: The Text Analysis Tool</h1>
+    <p>
+      Analyze human-written and AI-generated texts based on Linguistic markers.
+    </p>
+    <button onclick="showAnalysis()">Let's GO!</button>
+    <div class="attribution">
+      Developed by Ronit Das, IIT Guwahati.<br />
+      
+      <p class="disclaimer">This Tool can make mistakes. Check important info.</p>
+    </div>
+  </section>
+
+  <!-- Analysis Tool Container (initially hidden) -->
+  <div class="container" id="resultsContainer" style="display: none;">
+    <h1>Text Analysis Tool</h1>
+    <h2>Input Human Text</h2>
+    <textarea id="human-text" placeholder="Enter human-written text..."></textarea>
+    <h2>Input AI Text</h2>
+    <textarea id="ai-text" placeholder="Enter AI-generated text..."></textarea>
+    <button onclick="analyzeTexts()">Analyze Texts</button>
+    
+    <!-- Results Table -->
+    <table id="results-table">
+      <!-- Lexical Features Section -->
+      <tr class="feature-heading">
+        <th colspan="2">Lexical Features</th>
+      </tr>
+      <tr>
+        <td>Type-Token Ratio (Human)</td>
+        <td id="human-ttr"></td>
+      </tr>
+      <tr>
+        <td>Type-Token Ratio (AI)</td>
+        <td id="ai-ttr"></td>
+      </tr>
+      <tr>
+        <td>Number of Hedges (Human)</td>
+        <td id="human-hedges"></td>
+      </tr>
+      <tr>
+        <td>Number of Hedges (AI)</td>
+        <td id="ai-hedges"></td>
+      </tr>
+      <tr>
+        <td>Number of Boosters (Human)</td>
+        <td id="human-boosters"></td>
+      </tr>
+      <tr>
+        <td>Number of Boosters (AI)</td>
+        <td id="ai-boosters"></td>
+      </tr>
+      <tr>
+        <td>Frequency of Personal Pronouns (Human)</td>
+        <td id="human-pronouns"></td>
+      </tr>
+      <tr>
+        <td>Frequency of Personal Pronouns (AI)</td>
+        <td id="ai-pronouns"></td>
+      </tr>
+      
+      <!-- Punctuation Frequency Section -->
+      <tr class="feature-heading">
+        <th colspan="2">Punctuation Frequency</th>
+      </tr>
+      <tr>
+        <td>Total Punctuation Count (Human)</td>
+        <td id="human-punct-total"></td>
+      </tr>
+      <tr>
+        <td>Total Punctuation Count (AI)</td>
+        <td id="ai-punct-total"></td>
+      </tr>
+      
+      <!-- Syntactic Features Section -->
+      <tr class="feature-heading">
+        <th colspan="2">Syntactic Features</th>
+      </tr>
+      <tr>
+        <td>Average Sentence Length (Human)</td>
+        <td id="human-sentence-length"></td>
+      </tr>
+      <tr>
+        <td>Average Sentence Length (AI)</td>
+        <td id="ai-sentence-length"></td>
+      </tr>
+      <tr>
+        <td>Passive Voice Usage (Human)</td>
+        <td id="human-passive-voice"></td>
+      </tr>
+      <tr>
+        <td>Passive Voice Usage (AI)</td>
+        <td id="ai-passive-voice"></td>
+      </tr>
+      
+      <!-- Morphological Features Section -->
+      <tr class="feature-heading">
+        <th colspan="2">Morphological Features</th>
+      </tr>
+      <tr>
+        <td>Total Characters/Total Number of Words (Human)</td>
+        <td id="human-char-word"></td>
+      </tr>
+      <tr>
+        <td>Total Characters/Total Number of Words (AI)</td>
+        <td id="ai-char-word"></td>
+      </tr>
+      
+      <!-- Phonological Features Section -->
+      <tr class="feature-heading">
+        <th colspan="2">Phonological Features</th>
+      </tr>
+      <tr>
+        <td>Consonants/Vowels (Human)</td>
+        <td id="human-consonant-vowel"></td>
+      </tr>
+      <tr>
+        <td>Consonants/Vowels (AI)</td>
+        <td id="ai-consonant-vowel"></td>
+      </tr>
+      
+      <!-- Readability Features Section -->
+      <tr class="feature-heading">
+        <th colspan="2">Readability Features</th>
+      </tr>
+      <tr>
+        <td>Coleman-Liau Index (Human)</td>
+        <td id="human-cli"></td>
+      </tr>
+      <tr>
+        <td>Coleman-Liau Index (AI)</td>
+        <td id="ai-cli"></td>
+      </tr>
+      <tr>
+        <td>Interpretation (Human)</td>
+        <td id="human-cli-info"></td>
+      </tr>
+      <tr>
+        <td>Interpretation (AI)</td>
+        <td id="ai-cli-info"></td>
+      </tr>
+      
+      <!-- Figures of Speech Section -->
+      <tr class="feature-heading">
+        <th colspan="2">Figures of Speech</th>
+      </tr>
+      <tr>
+        <td>Similes Count (Human)</td>
+        <td id="human-similes"></td>
+      </tr>
+      <tr>
+        <td>Similes Count (AI)</td>
+        <td id="ai-similes"></td>
+      </tr>
+      <tr>
+        <td>Repetition Count (Human)</td>
+        <td id="human-repetition"></td>
+      </tr>
+      <tr>
+        <td>Repetition Count (AI)</td>
+        <td id="ai-repetition"></td>
+      </tr>
+
+      <!-- Alliteration & Onomatopoeia Rows -->
+      <tr>
+        <td>Alliteration Count (Human)</td>
+        <td id="human-alliteration"></td>
+      </tr>
+      <tr>
+        <td>Alliteration Count (AI)</td>
+        <td id="ai-alliteration"></td>
+      </tr>
+      <tr>
+        <td>Onomatopoeia Count (Human)</td>
+        <td id="human-onomatopoeia"></td>
+      </tr>
+      <tr>
+        <td>Onomatopoeia Count (AI)</td>
+        <td id="ai-onomatopoeia"></td>
+      </tr>
+      
+      <!-- Cohesion Analysis: Conjunction Frequency -->
+      <tr class="feature-heading">
+        <th colspan="2">Cohesion Analysis: Conjunction Frequency</th>
+      </tr>
+      <tr>
+        <td>Total Conjunction Count (Human)</td>
+        <td id="human-conjunctions"></td>
+      </tr>
+      <tr>
+        <td>Total Conjunction Count (AI)</td>
+        <td id="ai-conjunctions"></td>
+      </tr>
+    </table>
+    
+    <!-- PDF Download Button with changed color -->
+    <button class="download-button" onclick="downloadPDF()">Download Results as PDF</button>
+    
+    <!-- Formula Explanations Section -->
+    <div class="formula-section">
+      <h3>Terminology.</h3>
+      <ul>
+        <li><span class="formula-title">Type-Token Ratio (TTR):</span> Unique Words ÷ Total Words. <br><em>(Measures vocabulary richness)</em></li>
+        <li><span class="formula-title">Number of Hedges:</span> Count of occurrences of hedge words/phrases from a predefined list.</li>
+        <li><span class="formula-title">Number of Boosters:</span> Count of occurrences of booster words/phrases from a predefined list.</li>
+        <li><span class="formula-title">Frequency of Personal Pronouns:</span> Count of occurrences of predefined personal pronouns.</li>
+        <li><span class="formula-title">Punctuation Frequency:</span> Total punctuation count with a breakdown in brackets (Period, Comma, Exclamation, Question, Semicolon, Colon).</li>
+        <li><span class="formula-title">Average Sentence Length:</span> Total Number of Words ÷ Number of Sentences.</li>
+        <li><span class="formula-title">Passive Voice Usage (%):</span> (Number of Sentences with Passive Voice ÷ Total Number of Sentences) × 100.</li>
+        <li><span class="formula-title">Total Characters/Total Number of Words:</span> Total characters (excluding spaces) ÷ Total Words.</li>
+        <li><span class="formula-title">Consonants/Vowels:</span> Total number of predefined consonants ÷ Total number of predefined vowels.</li>
+        <li><span class="formula-title">Coleman-Liau Index:</span> CLI = 0.0588 × L − 0.296 × S − 15.8, where L is the average number of letters per 100 words and S is the average number of sentences per 100 words. <br><em>(Indicates the U.S. grade level needed to understand the text)</em></li>
+        <li><span class="formula-title">Figures of Speech – Similes Count:</span> Count of occurrences detected using simile patterns.</li>
+        <li><span class="formula-title">Figures of Speech – Repetition Count:</span> Count of instances where the same word appears consecutively.</li>
+        <li><span class="formula-title">Cohesion – Conjunction Frequency:</span> Total conjunction count with breakdown by type: Coordinating, Subordinating, Correlative, and Conjunctive Adverbs.</li>
+
+      </ul>
+          </div>
+  </div>
+
+  <script>
+    // Function to toggle between light and dark themes and update the toggle button text to "I" (on) or "0" (off)
+    function toggleDarkTheme() {
+      document.body.classList.toggle('dark-theme');
+      const isDark = document.body.classList.contains('dark-theme');
+      const btn = document.getElementById('themeToggle');
+      btn.innerText = isDark ? "I" : "0";
+      btn.setAttribute('aria-pressed', String(isDark));
+    }
+
+    // Function to hide the landing page and show the analysis tool
+    function showAnalysis() {
+      document.getElementById("landingPage").style.display = "none";
+      document.getElementById("resultsContainer").style.display = "block";
+    }
+
+    // Helper function to escape special regex characters in a string
+    function escapeRegExp(string) {
+      return string.replace(/[.*+\-?^${}()|[\]\\]/g, '\\$&');
+    }
+
+    // ------------------- ALLITERATION & ONOMATOPOEIA -------------------
+    const ONOMATOPOEIA_WORDS = [
+      "buzz", "hiss", "bang", "pop", "sizzle", "whizz", "thud", "clank",
+      "beep", "boing", "crash", "clang", "drip", "knock", "whack", "whoosh",
+      "zoom", "purr", "gurgle", "ticktock", "tick-tock", "splash", "rustle"
+    ];
+
+    function isConsonant(letter) {
+      return /^[bcdfghjklmnpqrstvwxyz]$/i.test(letter);
+    }
+
+    function countAlliteration(text) {
+      let words = text.split(/\W+/).filter(Boolean).map(w => w.toLowerCase());
+      let count = 0;
+      for (let i = 0; i < words.length - 1; i++) {
+        const first1 = words[i].charAt(0);
+        const first2 = words[i+1].charAt(0);
+        if (isConsonant(first1) && isConsonant(first2) && first1 === first2) {
+          count++;
+        }
+      }
+      return count;
+    }
+
+    function countOnomatopoeia(text) {
+      let words = text.split(/\W+/).filter(Boolean).map(w => w.toLowerCase());
+      let count = 0;
+      for (const w of words) {
+        if (ONOMATOPOEIA_WORDS.includes(w)) {
+          count++;
+        }
+      }
+      return count;
+    }
+
+    // ------------------- EXISTING ANALYSIS FUNCTIONS --------------------
+    function analyzeTexts() {
+      const humanText = document.getElementById('human-text').value;
+      const aiText = document.getElementById('ai-text').value;
+
+      if (!humanText.trim() || !aiText.trim()) {
+        alert("Please enter both a human-written text and an AI-generated text before analyzing.");
+        return;
+      }
+
+      // -------------- Lexical Features --------------
+      function getTypeTokenRatio(text) {
+        const words = text.toLowerCase().split(/\W+/).filter(Boolean);
+        if (words.length === 0) return "0.00";
+        const uniqueWords = new Set(words);
+        return (uniqueWords.size / words.length).toFixed(2);
+      }
+
+      function countHedges(text) {
+        const hedges = [
+          "almost", "apparently", "appear to be", "approximately", "assume", "believed",
+          "certain extent", "certain level", "certain amount", "could", "couldn’t", "doubt",
+          "essentially", "estimate", "frequently", "generally", "in general", "indicate",
+          "largely", "likely", "mainly", "may", "maybe", "might", "mostly", "often", "perhaps",
+          "plausible", "possible", "possibly", "presumably", "probable", "probably", "relatively",
+          "seems", "sometimes", "somewhat", "suggest", "suspect", "unlikely", "uncertain", "unclear",
+          "usually", "would", "wouldn’t", "little", "not understood"
+        ];
+        return countMatches(text, hedges);
+      }
+
+      function countBoosters(text) {
+        const boosters = [
+          "actually", "always", "apparent", "i believe", "certain that", "certainly", "certainty",
+          "clearly", "it is clear", "conclusively", "decidedly", "definitely", "demonstrate", "determine",
+          "doubtless", "essential", "establish", "in fact", "the fact that", "indeed", "know",
+          "it is known that", "must", "never", "no doubt", "beyond doubt", "obvious", "obviously",
+          "of course", "prove", "show", "sure", "true", "undoubtedly", "well known", "won’t", "even if",
+          "should", "by far"
+        ];
+        return countMatches(text, boosters);
+      }
+
+      const personalPronouns = [
+        "i", "you", "he", "she", "it", "we", "they",
+        "me", "you", "him", "her", "it", "us", "them",
+        "my", "your", "his", "her", "its", "our", "their",
+        "mine", "yours", "his", "hers", "ours", "theirs",
+        "myself", "yourself", "himself", "herself", "itself", "ourselves", "yourselves", "themselves"
+      ];
+      function countPersonalPronouns(text) {
+        const words = text.toLowerCase().split(/\W+/).filter(Boolean);
+        return words.filter(word => personalPronouns.includes(word)).length;
+      }
+
+      function countMatches(text, wordList) {
+        // Normalize curly quotes (’) to straight quotes (') so word-list
+        // entries like "couldn't" match text regardless of which apostrophe
+        // character was typed or pasted in.
+        const lowerText = text.toLowerCase().replace(/[\u2018\u2019]/g, "'");
+        let count = 0;
+        wordList.forEach(item => {
+          const lowerItem = item.toLowerCase().replace(/[\u2018\u2019]/g, "'");
+          const regex = new RegExp("\\b" + escapeRegExp(lowerItem) + "\\b", "gi");
+          const matches = lowerText.match(regex);
+          count += matches ? matches.length : 0;
+        });
+        return count;
+      }
+
+      // -------------- Punctuation Frequency --------------
+      function getPunctuationFrequency(text) {
+        const punctuationMarks = {
+          '.': 0,
+          ',': 0,
+          '!': 0,
+          '?': 0,
+          ';': 0,
+          ':': 0
+        };
+        const matches = text.match(/[.,!?;:]/g) || [];
+        matches.forEach(ch => {
+          if (punctuationMarks.hasOwnProperty(ch)) {
+            punctuationMarks[ch]++;
+          }
+        });
+        return punctuationMarks;
+      }
+
+      // -------------- Cohesion Analysis: Conjunction Frequency --------------
+      const coordinatingConjunctions = ["and", "but", "or", "nor", "for", "so", "yet"];
+      const subordinatingConjunctions = [
+        "after", "although", "as", "as if", "as long as", "as soon as", "as though",
+        "because", "before", "even if", "even though", "if", "in order that", "once",
+        "provided that", "rather than", "since", "so that", "than", "that", "though", "till",
+        "unless", "until", "when", "whenever", "where", "whereas", "wherever", "while"
+      ];
+      // Correlative conjunction pairs are written with content between them
+      // (e.g. "either cats or dogs"), so we match the pair with a bounded gap
+      // between the two parts rather than searching for adjacent literal phrases.
+      const correlativeConjunctionPairs = [
+        { first: "both", second: "and" },
+        { first: "either", second: "or" },
+        { first: "neither", second: "nor" },
+        { first: "not only", second: "but also" },
+        { first: "whether", second: "or" }
+      ];
+      const conjunctiveAdverbs = [
+        "accordingly", "also", "besides", "consequently", "finally", "furthermore", "however", "indeed",
+        "instead", "likewise", "meanwhile", "moreover", "nevertheless", "next", "nonetheless",
+        "otherwise", "similarly", "still", "then", "therefore", "thus"
+      ];
+
+      function countConjunctions(text) {
+        const lowerText = text.toLowerCase();
+        let total = 0;
+        let breakdown = {
+          coordinating: 0,
+          subordinating: 0,
+          correlative: 0,
+          conjunctiveAdverbs: 0
+        };
+
+        function countOccurrences(item) {
+          // Avoid double counting "so" when it's actually part of the
+          // subordinating phrase "so that" (already counted separately below).
+          const pattern = item === "so"
+            ? "\\bso\\b(?!\\s+that\\b)"
+            : "\\b" + escapeRegExp(item) + "\\b";
+          const regex = new RegExp(pattern, "gi");
+          const matches = lowerText.match(regex);
+          return matches ? matches.length : 0;
+        }
+
+        coordinatingConjunctions.forEach(conj => {
+          const count = countOccurrences(conj);
+          breakdown.coordinating += count;
+          total += count;
+        });
+
+        subordinatingConjunctions.forEach(conj => {
+          const count = countOccurrences(conj);
+          breakdown.subordinating += count;
+          total += count;
+        });
+
+        correlativeConjunctionPairs.forEach(pair => {
+          // Allow up to ~8 words between the two parts of the pair, and mark
+          // each matched instance so its words aren't picked up as a bare
+          // coordinating/subordinating conjunction elsewhere in the same span.
+          const pattern = new RegExp(
+            "\\b" + escapeRegExp(pair.first) + "\\b" +
+            "(?:\\s+\\S+){0,8}?\\s+" +
+            "\\b" + escapeRegExp(pair.second) + "\\b",
+            "gi"
+          );
+          const matches = lowerText.match(pattern) || [];
+          breakdown.correlative += matches.length;
+          total += matches.length;
+        });
+
+        conjunctiveAdverbs.forEach(conj => {
+          const count = countOccurrences(conj);
+          breakdown.conjunctiveAdverbs += count;
+          total += count;
+        });
+
+        return { total: total, breakdown: breakdown };
+      }
+
+      // -------------- Syntactic Features --------------
+      // Common abbreviations whose periods should NOT be treated as sentence
+      // boundaries. Without this, "Mr. Smith" or "e.g. this" would be split
+      // into separate "sentences", skewing sentence length, passive voice %,
+      // and the Coleman-Liau Index.
+      const ABBREVIATIONS = [
+        "mr", "mrs", "ms", "dr", "prof", "sr", "jr", "st", "vs", "etc",
+        "eg", "e.g", "ie", "i.e", "approx", "no", "vol", "fig", "u.s", "u.k"
+      ];
+
+      function splitIntoSentences(text) {
+        // Temporarily mask periods that are part of an abbreviation or a
+        // decimal number (e.g. "3.14") so they don't trigger a false sentence
+        // break, then split on real sentence-ending punctuation.
+        let masked = text.replace(/(\d)\.(\d)/g, "$1<DECIMAL>$2");
+        ABBREVIATIONS.forEach(abbr => {
+          const regex = new RegExp("\\b" + abbr.replace(/\./g, "\\.") + "\\.", "gi");
+          masked = masked.replace(regex, match => match.slice(0, -1) + "<ABBR_DOT>");
+        });
+        const sentences = masked.match(/[^.!?]+[.!?]+/g) || [];
+        return sentences.map(s => s.replace(/<ABBR_DOT>/g, ".").replace(/<DECIMAL>/g, "."));
+      }
+
+      function getAverageSentenceLength(text) {
+        const sentences = splitIntoSentences(text);
+        const totalWords = text.split(/\W+/).filter(Boolean).length;
+        return sentences.length ? (totalWords / sentences.length).toFixed(2) : 0;
+      }
+
+      function detectPassiveVoice(text) {
+        const passiveIndicators = /\b(is|are|was|were|be|been|being)\s+(\w+ed)\b/g;
+        const sentences = splitIntoSentences(text);
+        const passiveSentences = sentences.filter(sentence => passiveIndicators.test(sentence)).length;
+        return sentences.length ? ((passiveSentences / sentences.length) * 100).toFixed(2) : 0;
+      }
+
+      // -------------- Morphological Features --------------
+      function getCharWordRatio(text) {
+        const totalCharacters = text.replace(/\s/g, '').length;
+        const words = text.split(/\W+/).filter(Boolean);
+        return words.length ? (totalCharacters / words.length).toFixed(2) : 0;
+      }
+
+      // -------------- Phonological Features --------------
+      function getConsonantVowelRatio(text) {
+        const vowels = ['a', 'e', 'i', 'o', 'u'];
+        const consonants = ['b','c','d','f','g','h','j','k','l','m','n','p','q','r','s','t','v','w','x','y','z'];
+        const letters = text.toLowerCase().split('').filter(ch => /[a-z]/.test(ch));
+        const vowelCount = letters.filter(ch => vowels.includes(ch)).length;
+        const consonantCount = letters.filter(ch => consonants.includes(ch)).length;
+        return vowelCount ? (consonantCount / vowelCount).toFixed(2) : "N/A";
+      }
+
+      // -------------- Readability Features: Coleman-Liau Index --------------
+      function calculateColemanLiauIndex(text) {
+        const words = text.trim().split(/\W+/).filter(Boolean);
+        const totalWords = words.length;
+        const letters = text.replace(/[^a-zA-Z]/g, '');
+        const totalLetters = letters.length;
+        const sentences = splitIntoSentences(text);
+        const totalSentences = sentences.length;
+        if (totalWords === 0) {
+          return { index: "N/A", info: "Please enter some text." };
+        }
+        const L = (totalLetters / totalWords) * 100;
+        const S = (totalSentences / totalWords) * 100;
+        const cli = 0.0588 * L - 0.296 * S - 15.8;
+        return { index: cli.toFixed(2), info: interpretCLI(cli) };
+      }
+
+      function interpretCLI(cli) {
+        if (cli < 6) {
+          return "Very easy to read (Grade 5 or below).";
+        } else if (cli < 8) {
+          return "Easy to read (Grade 6-7).";
+        } else if (cli < 10) {
+          return "Fairly easy to read (Grade 8-9).";
+        } else if (cli < 12) {
+          return "Standard (Grade 10-11).";
+        } else if (cli < 14) {
+          return "Fairly difficult (Grade 12).";
+        } else if (cli < 16) {
+          return "Difficult (College level).";
+        } else {
+          return "Very difficult (College graduate level).";
+        }
+      }
+
+      // -------------- Figures of Speech --------------
+      function countSimiles(text) {
+        const similePattern1 = /as\s+\w+\s+as/gi;
+        const similePattern2 = /like\s+(a|an)\s+\w+/gi;
+        const matches1 = text.match(similePattern1) || [];
+        const matches2 = text.match(similePattern2) || [];
+        return matches1.length + matches2.length;
+      }
+
+      function countRepetition(text) {
+        const words = text.split(/\W+/).filter(Boolean);
+        let count = 0;
+        for (let i = 0; i < words.length - 1; i++) {
+          let w1 = words[i].toLowerCase();
+          let w2 = words[i+1].toLowerCase();
+          if (w1 && w1 === w2) {
+            count++;
+          }
+        }
+        return count;
+      }
+
+      // NEW: Alliteration & Onomatopoeia calls
+      const humanAlliteration = countAlliteration(humanText);
+      const aiAlliteration = countAlliteration(aiText);
+      const humanOnomatopoeia = countOnomatopoeia(humanText);
+      const aiOnomatopoeia = countOnomatopoeia(aiText);
+
+      // -------------- Updating the DOM --------------
+      // Lexical Features
+      document.getElementById('human-ttr').innerText = getTypeTokenRatio(humanText);
+      document.getElementById('ai-ttr').innerText = getTypeTokenRatio(aiText);
+      document.getElementById('human-hedges').innerText = countHedges(humanText);
+      document.getElementById('ai-hedges').innerText = countHedges(aiText);
+      document.getElementById('human-boosters').innerText = countBoosters(humanText);
+      document.getElementById('ai-boosters').innerText = countBoosters(aiText);
+      document.getElementById('human-pronouns').innerText = countPersonalPronouns(humanText);
+      document.getElementById('ai-pronouns').innerText = countPersonalPronouns(aiText);
+
+      // Punctuation Frequency
+      const humanPunct = getPunctuationFrequency(humanText);
+      const aiPunct = getPunctuationFrequency(aiText);
+      const humanTotalPunct = Object.values(humanPunct).reduce((sum, n) => sum + n, 0);
+      const aiTotalPunct = Object.values(aiPunct).reduce((sum, n) => sum + n, 0);
+      const humanPunctDetails = humanTotalPunct + " (" +
+          "Period: " + humanPunct['.'] + ", " +
+          "Comma: " + humanPunct[','] + ", " +
+          "Exclamation: " + humanPunct['!'] + ", " +
+          "Question: " + humanPunct['?'] + ", " +
+          "Semicolon: " + humanPunct[';'] + ", " +
+          "Colon: " + humanPunct[':'] + ")";
+      const aiPunctDetails = aiTotalPunct + " (" +
+          "Period: " + aiPunct['.'] + ", " +
+          "Comma: " + aiPunct[','] + ", " +
+          "Exclamation: " + aiPunct['!'] + ", " +
+          "Question: " + aiPunct['?'] + ", " +
+          "Semicolon: " + aiPunct[';'] + ", " +
+          "Colon: " + aiPunct[':'] + ")";
+      document.getElementById('human-punct-total').innerText = humanPunctDetails;
+      document.getElementById('ai-punct-total').innerText = aiPunctDetails;
+
+      // Cohesion Analysis: Conjunction Frequency
+      const humanConj = countConjunctions(humanText);
+      const aiConj = countConjunctions(aiText);
+      const humanConjDetails = humanConj.total + " (" +
+          "Coord: " + humanConj.breakdown.coordinating + ", " +
+          "Subord: " + humanConj.breakdown.subordinating + ", " +
+          "Corr: " + humanConj.breakdown.correlative + ", " +
+          "ConjAdv: " + humanConj.breakdown.conjunctiveAdverbs + ")";
+      const aiConjDetails = aiConj.total + " (" +
+          "Coord: " + aiConj.breakdown.coordinating + ", " +
+          "Subord: " + aiConj.breakdown.subordinating + ", " +
+          "Corr: " + aiConj.breakdown.correlative + ", " +
+          "ConjAdv: " + aiConj.breakdown.conjunctiveAdverbs + ")";
+      document.getElementById('human-conjunctions').innerText = humanConjDetails;
+      document.getElementById('ai-conjunctions').innerText = aiConjDetails;
+
+      // Syntactic Features
+      document.getElementById('human-sentence-length').innerText = getAverageSentenceLength(humanText);
+      document.getElementById('ai-sentence-length').innerText = getAverageSentenceLength(aiText);
+      document.getElementById('human-passive-voice').innerText = `${detectPassiveVoice(humanText)}%`;
+      document.getElementById('ai-passive-voice').innerText = `${detectPassiveVoice(aiText)}%`;
+
+      // Morphological Features
+      document.getElementById('human-char-word').innerText = getCharWordRatio(humanText);
+      document.getElementById('ai-char-word').innerText = getCharWordRatio(aiText);
+
+      // Phonological Features
+      document.getElementById('human-consonant-vowel').innerText = getConsonantVowelRatio(humanText);
+      document.getElementById('ai-consonant-vowel').innerText = getConsonantVowelRatio(aiText);
+
+      // Readability Features: Coleman-Liau Index
+      const humanCLI = calculateColemanLiauIndex(humanText);
+      const aiCLI = calculateColemanLiauIndex(aiText);
+      document.getElementById('human-cli').innerText = humanCLI.index;
+      document.getElementById('ai-cli').innerText = aiCLI.index;
+      document.getElementById('human-cli-info').innerText = humanCLI.info;
+      document.getElementById('ai-cli-info').innerText = aiCLI.info;
+
+      // Figures of Speech
+      document.getElementById('human-similes').innerText = countSimiles(humanText);
+      document.getElementById('ai-similes').innerText = countSimiles(aiText);
+      document.getElementById('human-repetition').innerText = countRepetition(humanText);
+      document.getElementById('ai-repetition').innerText = countRepetition(aiText);
+
+      // Update the DOM for Alliteration & Onomatopoeia
+      document.getElementById('human-alliteration').innerText = humanAlliteration;
+      document.getElementById('ai-alliteration').innerText = aiAlliteration;
+      document.getElementById('human-onomatopoeia').innerText = humanOnomatopoeia;
+      document.getElementById('ai-onomatopoeia').innerText = aiOnomatopoeia;
+    }
+
+    // -------------- Download PDF Function --------------
+    function downloadPDF() {
+      // Get the entire container with results
+      const resultsContainer = document.getElementById("resultsContainer");
+      // For a simple approach, we extract the innerText (plain text)
+      const resultsText = resultsContainer.innerText;
+
+      // Create a new jsPDF instance
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+
+      // Optional: set font size
+      doc.setFontSize(10);
+      // Split text to fit the width (180 mm is a good width for an A4 in portrait mode)
+      const lines = doc.splitTextToSize(resultsText, 180);
+      doc.text(lines, 10, 10);
+
+      // Trigger the download with a given filename
+      doc.save("analysis_results.pdf");
+    }
+  </script>
+</body>
+</html>
